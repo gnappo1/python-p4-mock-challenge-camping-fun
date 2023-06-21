@@ -26,9 +26,9 @@ class Activity(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
     # Add relationship
-    signups = db.relationship('Signup', back_populates='activity', lazy=True)
+    signups = db.relationship('Signup', back_populates='activity')#, lazy='joined')
     campers = association_proxy(
-        "signups", "camper", creator=lambda camper: Signup(camper=camper)
+        "signups", "camper"#, creator=lambda camper: Signup(camper=camper)
     )
     # Add serialization rules
     serialize_only = ("id", "name", "difficulty")
@@ -47,16 +47,19 @@ class Camper(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
     # Add relationship
-    signups = db.relationship('Signup', back_populates='camper', lazy=True)
+    signups = db.relationship('Signup', back_populates='camper')#, lazy=True)
     # activities = association_proxy("signups", "activity")
     activities = association_proxy(
-        "signups", "activity", creator=lambda activity: Signup(activity=activity)
+        "signups", "activity"#, creator=lambda activity: Signup(activity=activity)
     )
     
     # Add serialization rules
-    serialize_only = ("id", "name", "age", "signups")
-    serialize_rules = ("-signups.camper", "signups.activity.id", "signups.activity.name", "signups.activity.difficulty")
+    serialize_only = ("id", "name", "age")
+    # serialize_rules = ("-signups.camper", "signups.activity.id", "signups.activity.name", "signups.activity.difficulty")
+    
     # def to_dict(self, *args, **kwargs):
+    #     # AN IDEA: MONKEYPATCH the method in the model 
+    #     # to remove lots of serialization logic from views
     #     # Check if the "nested" keyword argument is provided and if it equals "show"
     #     if kwargs.get('nested') == 'show':
     #         # Include nested relationships for the show route
@@ -92,8 +95,8 @@ class Signup(db.Model, SerializerMixin):
     time = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
     updated_at = db.Column(db.DateTime, onupdate=db.func.now())
-    activity_id = db.Column(db.Integer, db.ForeignKey('activities.id'), nullable=False)
-    camper_id = db.Column(db.Integer, db.ForeignKey('campers.id'), nullable=False)
+    activity_id = db.Column(db.Integer, db.ForeignKey('activities.id'))
+    camper_id = db.Column(db.Integer, db.ForeignKey('campers.id'))
     
     # Add relationships
     activity = db.relationship('Activity', back_populates='signups', lazy=True)
@@ -104,7 +107,7 @@ class Signup(db.Model, SerializerMixin):
     # Add validation
     @validates('time')
     def validate_time(self, key, time):
-        if type(time) is not int or time < 0 or time > 24:
+        if type(time) is not int or time < 0 or time > 23:
             raise AssertionError('time is required and must be between 0 and 23')
         return time
     
